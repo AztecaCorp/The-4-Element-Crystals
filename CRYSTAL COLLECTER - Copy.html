@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Collecter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        #game-container {
+            width: 600px;
+            height: 400px;
+            position: relative;
+            border: 2px solid black;
+            overflow: hidden; /* Ensure player stays within this container */
+        }
+        
+        #player {
+            width: 20px;
+            height: 20px;
+            background-color: blue;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* Ensure player is on top */
+        }
+
+        .crystal {
+            width: 20px;
+            height: 20px;
+            background-color: yellow;
+            position: absolute;
+        }
+
+        #mobs {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .mob {
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            position: absolute;
+        }
+
+        #kingdom {
+            width: 100px;
+            height: 100px;
+            background-color: grey;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1; /* Ensure kingdom is behind everything */
+        }
+
+        #grass {
+            width: 100%;
+            height: 100%;
+            background-color: green;
+        }
+
+        #health-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #ccc;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+
+        #health {
+            height: 100%;
+            background-color: green;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="player"></div>
+        <div id="kingdom">
+            <div id="grass"></div> <!-- Green grass inside the kingdom -->
+        </div>
+        <div id="health-bar">
+            <div id="health"></div> <!-- Health bar indicating player's health -->
+        </div>
+        <div id="mobs"></div> <!-- Container for mobs -->
+    </div>
+
+    <script>
+        // Game variables
+        let crystalsCollected = 0;
+        const totalCrystals = 4; // Total number of crystals to collect
+        const gameWidth = 600; // Width of the game area
+        const gameHeight = 400; // Height of the game area
+        const numMobs = 30; // Number of mobs in the game (changed from 50 to 30)
+
+        // Initialize player position
+        let playerX = 300;
+        let playerY = 200;
+
+        // Kingdom position
+        const kingdomSize = 100; // Kingdom size (square)
+        const kingdomX = gameWidth / 2 - kingdomSize / 2; // X position of kingdom
+        const kingdomY = gameHeight / 2 - kingdomSize / 2; // Y position of kingdom
+
+        // Initialize player health
+        let playerHealth = 3; // Player starts with 3 hearts
+
+        // Update health bar based on player's health
+        function updateHealthBar() {
+            let healthPercentage = (playerHealth / 3) * 100; // Calculate percentage
+            document.getElementById('health').style.width = healthPercentage + '%'; // Update health bar width
+        }
+
+        // Move player function with W, S, D, A keys
+        function movePlayer(event) {
+            const speed = 20;
+            switch(event.key) {
+                case 'w':
+                case 'W':
+                    playerY = Math.max(playerY - speed, 0); // Move up
+                    break;
+                case 's':
+                case 'S':
+                    playerY = Math.min(playerY + speed, gameHeight - 20); // Move down
+                    break;
+                case 'd':
+                case 'D':
+                    playerX = Math.min(playerX + speed, gameWidth - 20); // Move right
+                    break;
+                case 'a':
+                case 'A':
+                    playerX = Math.max(playerX - speed, 0); // Move left
+                    break;
+            }
+
+            document.getElementById('player').style.left = playerX + 'px';
+            document.getElementById('player').style.top = playerY + 'px';
+
+            checkCollision(); // After moving, check for collisions with crystals and mobs
+        }
+
+        // Check collision with crystals and mobs
+        function checkCollision() {
+            // Collision with crystals
+            let player = document.getElementById('player');
+            let crystals = document.getElementsByClassName('crystal');
+
+            for (let i = 0; i < crystals.length; i++) {
+                if (isCollision(player, crystals[i])) {
+                    crystals[i].remove(); // Remove the crystal
+                    crystalsCollected++; // Increment crystals collected
+                    console.log('Collected crystals: ' + crystalsCollected);
+                }
+            }
+
+            // Collision with mobs
+            let mobs = document.getElementsByClassName('mob');
+            for (let i = 0; i < mobs.length; i++) {
+                if (isCollision(player, mobs[i])) {
+                    // Decrease player health
+                    playerHealth--;
+                    updateHealthBar(); // Update health bar display
+
+                    // Check if player loses the game
+                    if (playerHealth === 0) {
+                        gameOver();
+                        return;
+                    }
+
+                    // Reset player position (for simplicity)
+                    playerX = 300;
+                    playerY = 200;
+                    document.getElementById('player').style.left = playerX + 'px';
+                    document.getElementById('player').style.top = playerY + 'px';
+                }
+            }
+
+            // Check if all crystals are collected
+            if (crystalsCollected === totalCrystals) {
+                // Check if player has returned to the kingdom
+                if (playerX >= kingdomX - 20 && playerX <= kingdomX + kingdomSize + 20 &&
+                    playerY >= kingdomY - 20 && playerY <= kingdomY + kingdomSize + 20) {
+                    gameOver(true); // Game over with victory
+                }
+            }
+        }
+
+        // Function to end the game
+        function gameOver(victory = false) {
+            if (victory) {
+                alert('Congratulations! You collected all the crystals and returned to the kingdom.');
+            } else {
+                alert('Game over! You lost all your hearts.');
+            }
+            // Additional logic for game over actions can be added here
+        }
+
+        // Function to generate crystals
+        function generateCrystals() {
+            let crystalsContainer = document.getElementById('game-container');
+            let positions = [
+                { top: 10, left: 10 },
+                { top: 10, right: 10 },
+                { bottom: 10, left: 10 },
+                { bottom: 10, right: 10 }
+            ];
+
+            positions.forEach(pos => {
+                let crystal = document.createElement('div');
+                crystal.className = 'crystal';
+                if (pos.top !== undefined) {
+                    crystal.style.top = pos.top + 'px';
+                }
+                if (pos.bottom !== undefined) {
+                    crystal.style.bottom = pos.bottom + 'px';
+                }
+                if (pos.left !== undefined) {
+                    crystal.style.left = pos.left + 'px';
+                }
+                if (pos.right !== undefined) {
+                    crystal.style.right = pos.right + 'px';
+                }
+                crystalsContainer.appendChild(crystal);
+            });
+        }
+
+        // Function to generate mobs
+        function generateMobs() {
+            let mobsContainer = document.getElementById('mobs');
+            for (let i = 0; i < numMobs; i++) {
+                let mob = document.createElement('div');
+                mob.className = 'mob';
+
+                // Generate mobs outside the kingdom boundaries
+                let mobX, mobY;
+                do {
+                    mobX = Math.random() * (gameWidth - 20);
+                    mobY = Math.random() * (gameHeight - 20);
+                } while (
+                    mobX >= kingdomX && mobX <= kingdomX + kingdomSize &&
+                    mobY >= kingdomY && mobY <= kingdomY + kingdomSize
+                );
+
+                mob.style.top = mobY + 'px';
+                mob.style.left = mobX + 'px';
+
+                mobsContainer.appendChild(mob);
+            }
+        }
+
+        // Helper function to detect collision
+        function isCollision(player, item) {
+            let playerRect = player.getBoundingClientRect();
+            let itemRect = item.getBoundingClientRect();
+
+            return !(playerRect.right < itemRect.left || 
+                     playerRect.left > itemRect.right || 
+                     playerRect.bottom < itemRect.top || 
+                     playerRect.top > itemRect.bottom);
+        }
+
+        // Initialize the game
+        function initGame() {
+            generateCrystals(); // Generate crystals
+            generateMobs(); // Generate mobs
+            updateHealthBar(); // Initialize health bar
+            document.addEventListener('keydown', movePlayer); // Listen for player movement
+        }
+
+        // Call initGame function when the page is fully loaded
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
